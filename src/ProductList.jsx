@@ -1,13 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import './ProductList.css'
 import CartItem from './CartItem';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { addItem } from './CartSlice';
 function ProductList({ onHomeClick }) {
     const [showCart, setShowCart] = useState(false);
     const [showPlants, setShowPlants] = useState(false); // State to control the visibility of the About Us page
     const [addedToCart, setAddedToCart] = useState({}); // Tracks which products have been added to the cart, keyed by plant name
     const dispatch = useDispatch();
+    const cartItems = useSelector(state => state.cart.items);
+
+    // Total number of plants in the cart, shown on the cart icon
+    const totalQuantity = cartItems.reduce((total, item) => total + item.quantity, 0);
+
+    // Re-enable the "Add to Cart" button for plants that were removed from the cart
+    useEffect(() => {
+        setAddedToCart((prevState) => {
+            const updated = {};
+            Object.keys(prevState).forEach((name) => {
+                if (cartItems.some(item => item.name === name)) {
+                    updated[name] = true;
+                }
+            });
+            return updated;
+        });
+    }, [cartItems]);
 
     const plantsArray = [
         {
@@ -282,14 +299,14 @@ function ProductList({ onHomeClick }) {
                 </div>
                 <div style={styleObjUl}>
                     <div> <a href="#" onClick={(e) => handlePlantsClick(e)} style={styleA}>Plants</a></div>
-                    <div> <a href="#" onClick={(e) => handleCartClick(e)} style={styleA}><h1 className='cart'><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" id="IconChangeColor" height="68" width="68"><rect width="156" height="156" fill="none"></rect><circle cx="80" cy="216" r="12"></circle><circle cx="184" cy="216" r="12"></circle><path d="M42.3,72H221.7l-26.4,92.4A15.9,15.9,0,0,1,179.9,176H84.1a15.9,15.9,0,0,1-15.4-11.6L32.5,37.8A8,8,0,0,0,24.8,32H8" fill="none" stroke="#faf9f9" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" id="mainIconPathAttribute"></path></svg></h1></a></div>
+                    <div> <a href="#" onClick={(e) => handleCartClick(e)} style={styleA}><h1 className='cart'><span className="cart_quantity_count">{totalQuantity}</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" id="IconChangeColor" height="68" width="68"><rect width="156" height="156" fill="none"></rect><circle cx="80" cy="216" r="12"></circle><circle cx="184" cy="216" r="12"></circle><path d="M42.3,72H221.7l-26.4,92.4A15.9,15.9,0,0,1,179.9,176H84.1a15.9,15.9,0,0,1-15.4-11.6L32.5,37.8A8,8,0,0,0,24.8,32H8" fill="none" stroke="#faf9f9" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" id="mainIconPathAttribute"></path></svg></h1></a></div>
                 </div>
             </div>
             {!showCart ? (
                 <div className="product-grid">
                     {plantsArray.map((category, index) => ( // Loop through each category in plantsArray
                         <div key={index}> {/* Unique key for each category div */}
-                            <h1>
+                            <h1 className="category-heading">
                                 <div>{category.category}</div> {/* Display the category name */}
                             </h1>
                             <div className="product-list"> {/* Container for the list of plant cards */}
@@ -305,10 +322,11 @@ function ProductList({ onHomeClick }) {
                                         <div className="product-description">{plant.description}</div> {/* Display plant description */}
                                         <div className="product-cost">{plant.cost}</div> {/* Display plant cost (already includes "$") */}
                                         <button
-                                            className="product-button"
+                                            className={addedToCart[plant.name] ? "product-button added-to-cart" : "product-button"}
                                             onClick={() => handleAddToCart(plant)} // Handle adding plant to cart
+                                            disabled={addedToCart[plant.name]} // Disable once the plant is in the cart
                                         >
-                                            Add to Cart
+                                            {addedToCart[plant.name] ? "Added to Cart" : "Add to Cart"}
                                         </button>
                                     </div>
                                 ))}
